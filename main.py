@@ -17,6 +17,7 @@ API_KEY = os.getenv('API_KEY')
 
 d = enchant.Dict("en_US")
 lingo_word = None
+guesses = []
 
 def start_command(update, context):
 
@@ -40,13 +41,9 @@ def start_command(update, context):
         update.message.reply_text('Game has started\. Waiting for guesses from players\.')
 
 def guess_command(update, context):
-    # soup = BeautifulSoup(update.message.text_html)
-    # print("to_parse", update.message.text_html)
-    # tag=soup.find("span")
-    print("***", context.args)
+
     correctness = [-1,-1,-1,-1,-1]
 
-    print("the lingo word", lingo_word)
     if not lingo_word:
         update.message.reply_text('No word has been set\. Please have a player set a word before making guesses\.')
 
@@ -62,7 +59,7 @@ def guess_command(update, context):
     elif not d.check(guess):
         update.message.reply_text('Word was not in the english dictionary\. Please make sure you spelled it correctly\.')
     else:
-        not_complete = []
+        
         for i in range(len(guess)):
             if guess[i] == lingo_word[i]:
                 correctness[i] = 2
@@ -77,13 +74,13 @@ def guess_command(update, context):
         for i in range(len(correctness)):
             val = correctness[i]
             if val == 2:
-                str_res += '*' + guess[i] + '*'
+                str_res += '*' + guess[i] + '* '
             elif val == 1:
-                str_res += '`' + guess[i] + '`'
+                str_res += '_' + guess[i] + '_ '
             elif val == 0:
-                str_res += '~' + guess[i] + '~'
+                str_res += '~' + guess[i] + '~ '
 
-        update.message.reply_text(str_res)
+        update.message.reply_text(str_res+'\n\n')
 
 
 
