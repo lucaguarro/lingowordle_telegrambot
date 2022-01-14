@@ -1,11 +1,11 @@
 import os
 from dotenv import load_dotenv
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Defaults
-
 import commands as c
 
 load_dotenv()
-API_KEY = os.getenv('API_KEY')
+# API_KEY = os.getenv('API_KEY')
+API_KEY = os.environ['API_KEY']
 PORT = int(os.environ.get('PORT', 5000))
 
 def error(update, context):
@@ -30,7 +30,7 @@ def main():
     updater.start_webhook(listen="0.0.0.0",
                           port=int(PORT),
                           url_path=API_KEY)
-    updater.bot.setWebhook('https://mysterious-scrubland-05598.herokuapp.com/' + TOKEN)
+    updater.bot.setWebhook('https://wordle-telegram-bot.herokuapp.com/' + TOKEN)
     # updater.start_polling(0)
     # updater.idle()
 
