@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from telegram.ext import Updater, CommandHandler, Defaults
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Defaults
 
 import logging
 
@@ -28,7 +28,9 @@ def main():
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandler("start", c.start_command)) # , Filters.entity('spoiler')
+    dp.add_handler(CallbackQueryHandler(c.button))
     dp.add_handler(CommandHandler("guess", c.guess_command)) # , Filters.entity('spoiler')
+    dp.add_handler(CommandHandler("status", c.status_command))
     dp.add_handler(CommandHandler("help", c.help_command))
 
     # dp.add_handler(MessageHandler(Filters.text, handle_message))
