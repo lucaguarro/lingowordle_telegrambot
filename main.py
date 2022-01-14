@@ -2,9 +2,9 @@ import os
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Defaults
 import commands as c
 
-# API_KEY = os.getenv('API_KEY')
 API_KEY = os.environ.get('API_KEY')
 PORT = int(os.environ.get('PORT', '13978'))
+print("whats up folks")
 
 def error(update, context):
     print(f"Update {update} caused error {context.error}")
