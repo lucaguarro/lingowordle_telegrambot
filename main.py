@@ -32,7 +32,7 @@ def main():
                           url_path=API_KEY)
     updater.bot.setWebhook('https://wordle-telegram-bot.herokuapp.com/' + TOKEN)
     # updater.start_polling(0)
-    # updater.idle()
+    updater.idle()
 
 if __name__ == '__main__':
     main()
