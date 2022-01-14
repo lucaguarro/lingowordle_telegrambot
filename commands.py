@@ -5,30 +5,28 @@ from collections import Counter
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 d = enchant.Dict("en_US")
-lingo_word = None
-guesses = []
-all_colors = []
 
 def start_command(update, context):
+    # context.chat_data['test'] = 1
 
-    soup = BeautifulSoup(update.message.text_html)
+    soup = BeautifulSoup(update.message.text_html, features="html.parser")
     tag=soup.find("span", {"class": "tg-spoiler"})
 
     if tag is None:
         update.message.reply_text('The word must be in spoiler text so the other players can\'t see it\!')
         return
 
-    global potential_lingo_word, lingo_word
     potential_lingo_word = tag.string.upper()
-    print("lingo_word", lingo_word)
-    print("tag", tag)
+    context.chat_data['potential_lingo_word'] = potential_lingo_word
+    lingo_word = context.chat_data.get('lingo_word')
 
     if len(potential_lingo_word) != 5:
         update.message.reply_text('Lingo word must be 5 characters long\. No less and no more\.\nGame word was not set\.')
     elif not d.check(potential_lingo_word):
         update.message.reply_text('Word was not in the english dictionary\. Please make sure you spelled it correctly\.')
     else:
-        if lingo_word and (not len(guesses) or (len(guesses) and guesses[-1] != lingo_word)):
+        guesses = context.chat_data.get('guesses')
+        if lingo_word and (not guesses or (len(guesses) and guesses[-1] != lingo_word)):
             keyboard = [
                 [
                     InlineKeyboardButton("Yeah Dude", callback_data='1'),
@@ -38,25 +36,22 @@ def start_command(update, context):
             reply_markup = InlineKeyboardMarkup(keyboard)
             update.message.reply_text('You guys haven\'t finished the last game\. Are you sure you want to start a new one:', reply_markup=reply_markup)
         else:
-            lingo_word = potential_lingo_word
-            potential_lingo_word = None
+            context.chat_data['lingo_word'] = context.chat_data['potential_lingo_word']
+            context.chat_data['potential_lingo_word'] = None
+            context.chat_data['guesses'] = None
             update.message.reply_text('Game has started\. Waiting for guesses from players\.')
 
 def button(update, context):
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
-    global potential_lingo_word, lingo_word
     query.answer()
     if query.data == '1':
-        lingo_word = potential_lingo_word
-        potential_lingo_word = None
-    else:
-        potential_lingo_word = None
+        context.chat_data['lingo_word'] = context.chat_data['potential_lingo_word']
+        query.message.reply_text('Game has started\. Waiting for guesses from players\.')
 
-    query.message.reply_text('Game has started\. Waiting for guesses from players\.')
+    context.chat_data['potential_lingo_word'] = None
 
-
-def validate_guess(guess):
+def validate_guess(lingo_word, guess):
     correctness = [-1,-1,-1,-1,-1]
     counter = Counter(lingo_word)
     for i in range(len(guess)):
@@ -71,32 +66,41 @@ def validate_guess(guess):
     
     return correctness
 
-def generate_guess_response(correctness, guess):
-    global all_colors
+def gen_colors(correctness):
     colors = ''
-    str_res = '  '
     for i in range(len(correctness)):
         val = correctness[i]
         if val == 2:
             colors += '🟩'
-            str_res += '*' + guess[i] + '*'
         elif val == 1:
             colors += '🟨'
-            str_res += '_' + guess[i] + '_'
         elif val == 0:
             colors += '🟥'
+    return colors
+
+def gen_text(correctness, guess):
+    str_res = ''
+    for i in range(len(correctness)):
+        val = correctness[i]
+        if val == 2:
+            str_res += '*' + guess[i] + '*'
+        elif val == 1:
+            str_res += '_' + guess[i] + '_'
+        elif val == 0:
             str_res += '~' + guess[i] + '~'
         if i % 2 == 0:
-            str_res += ' ' * 4
+            str_res += ' ' * 2
         else:
-            str_res += ' ' * 5
-    
-    all_colors.append(colors)
-    
+            str_res += ' ' * 3
+    return str_res
+
+def generate_guess_response(correctness, guess):
+    colors = '' + gen_colors(correctness)
+    str_res = ' ' + gen_text(correctness, guess)
     full_res = colors + '\n' + str_res + '\n' + colors
     return full_res
 
-def generate_win_response(str_res):
+def generate_win_response(str_res, guesses):
     num_guesses = len(guesses)
     if num_guesses > 1:
         win_res = "YOU GOT IT RIGHT BUDDY AND IT ONLY TOOK YOU " + str(num_guesses) + " TRIES"
@@ -104,17 +108,20 @@ def generate_win_response(str_res):
         win_res = "ONE AND DONE BABY ONE AND DONE"
     return str_res + '\n' + win_res
 
-def generate_incorrect_response(str_res):
+def generate_incorrect_response(str_res, guesses):
     num_guesses = len(guesses)
     inc_res = "GUESS \#" + str(num_guesses)
     return inc_res + '\n' + str_res
 
 def guess_command(update, context):
-    global guesses
+    # context.chat_data['test'] += 1
+    # print(context.chat_data['test'])
+    lingo_word = context.chat_data.get('lingo_word')
+    guesses = context.chat_data.get('guesses')
     if not lingo_word:
         update.message.reply_text('No word has been set\. Please have a player set a word before making guesses\.')
         return
-    elif len(guesses) and guesses[-1] == lingo_word:
+    elif guesses and guesses[-1] == lingo_word:
         update.message.reply_text('You guys already got this word bruh\. Start a new word with the \'start\' command or see your former guesses with \'status\'\.')
         return
 
@@ -129,20 +136,31 @@ def guess_command(update, context):
     elif not d.check(guess):
         update.message.reply_text('Word was not in the english dictionary\. Please make sure you spelled it correctly\.')
     else:
-        
-        guesses.append(guess)
-        correctness = validate_guess(guess)
+        if not context.chat_data.get('guesses'):
+            context.chat_data['guesses'] = [guess]
+        else:
+            context.chat_data['guesses'].append(guess)
+
+        lingo_word = context.chat_data.get('lingo_word')
+        correctness = validate_guess(lingo_word, guess)
         str_res = generate_guess_response(correctness, guess)
 
         if guess == lingo_word:
-            str_res = generate_win_response(str_res)
+            str_res = generate_win_response(str_res, context.chat_data.get('guesses'))
         else:
-            str_res = generate_incorrect_response(str_res)
-
+            str_res = generate_incorrect_response(str_res, context.chat_data.get('guesses'))
         update.message.reply_text(str_res+'\n\n')
     
 def status_command(update, context):
-    if len(guesses):
+    if context.chat_data.get('guesses'):
+        all_colors = []
+        guesses = context.chat_data.get('guesses')
+        for guess in guesses:
+            lingo_word = context.chat_data.get('lingo_word')
+            correctness = validate_guess(lingo_word, guess)
+            colors = gen_colors(correctness)
+            all_colors.append(colors)
+
         colors_and_guesses=["{}{}".format(a_, b_) for a_, b_ in zip(all_colors, guesses)]
         all_colors_text = '\n'.join(colors_and_guesses)
         update.message.reply_text(all_colors_text)
