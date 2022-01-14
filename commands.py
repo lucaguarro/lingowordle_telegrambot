@@ -45,6 +45,7 @@ def button(update, context):
     query.answer()
     if query.data == '1':
         context.chat_data['lingo_word'] = context.chat_data['potential_lingo_word']
+        del context.chat_data['guesses']
         query.message.reply_text('Game has started\. Waiting for guesses from players\.')
 
     context.chat_data['potential_lingo_word'] = None
@@ -56,11 +57,14 @@ def validate_guess(lingo_word, guess):
         if guess[i] == lingo_word[i]:
             correctness[i] = 2
             counter[guess[i]] -= 1
-        elif counter[guess[i]]:
-            correctness[i] = 1
-            counter[guess[i]] -= 1
-        else:
-            correctness[i] = 0
+
+    for i in range(len(guess)):
+        if not correctness[i] == 2:
+            if counter[guess[i]]:
+                correctness[i] = 1
+                counter[guess[i]] -= 1
+            else:
+                correctness[i] = 0
     
     return correctness
 
