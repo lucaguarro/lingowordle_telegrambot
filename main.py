@@ -2,21 +2,11 @@ import os
 from dotenv import load_dotenv
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Defaults
 
-import logging
-
 import commands as c
-
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                     level=logging.INFO)
 
 load_dotenv()
 API_KEY = os.getenv('API_KEY')
-
-# def handle_message(update, context):
-#     text = str(update.message.text).lower()
-#     response = r.sample_responses(text)
-
-#     update.message.reply_text(response)
+PORT = int(os.environ.get('PORT', 5000))
 
 def error(update, context):
     print(f"Update {update} caused error {context.error}")
@@ -34,10 +24,15 @@ def main():
     dp.add_handler(CommandHandler("help", c.help_command))
 
     # dp.add_handler(MessageHandler(Filters.text, handle_message))
-
     dp.add_error_handler(error)
-    updater.start_polling(0)
-    updater.idle()
+
+    # Start the Bot
+    updater.start_webhook(listen="0.0.0.0",
+                          port=int(PORT),
+                          url_path=API_KEY)
+    updater.bot.setWebhook('https://mysterious-scrubland-05598.herokuapp.com/' + TOKEN)
+    # updater.start_polling(0)
+    # updater.idle()
 
 if __name__ == '__main__':
     main()
