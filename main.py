@@ -5,8 +5,8 @@ import commands as c
 
 load_dotenv()
 # API_KEY = os.getenv('API_KEY')
-API_KEY = os.environ['API_KEY']
-PORT = int(os.environ.get('PORT', 5000))
+API_KEY = os.environ.get('API_KEY')
+PORT = int(os.environ.get('PORT', '8443'))
 
 def error(update, context):
     print(f"Update {update} caused error {context.error}")
@@ -29,9 +29,9 @@ def main():
     # Start the Bot
     updater.start_webhook(listen="0.0.0.0",
                           port=int(PORT),
-                          url_path=API_KEY)
-    updater.bot.setWebhook('https://wordle-telegram-bot.herokuapp.com/' + API_KEY)
-    # updater.start_polling(0)
+                          url_path=API_KEY,
+                          webhook_url='https://wordle-telegram-bot.herokuapp.com/' + API_KEY)
+
     updater.idle()
 
 if __name__ == '__main__':
