@@ -1,10 +1,10 @@
 from bs4 import BeautifulSoup
-import enchant
 from collections import Counter
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-d = enchant.Dict("en_US")
+with open("words_alpha.txt", "r") as f:
+    d = {line.strip() for line in f}
 
 def start_command(update, context):
     soup = BeautifulSoup(update.message.text_html, features="html.parser")
@@ -20,7 +20,7 @@ def start_command(update, context):
 
     if len(potential_lingo_word) != 5:
         update.message.reply_text('Lingo word must be 5 characters long\. No less and no more\.\nGame word was not set\.')
-    elif not d.check(potential_lingo_word):
+    elif not potential_lingo_word.lower() in d: #d.check(potential_lingo_word):
         update.message.reply_text('Word was not in the english dictionary\. Please make sure you spelled it correctly\.')
     else:
         guesses = context.chat_data.get('guesses')
@@ -135,7 +135,7 @@ def guess_command(update, context):
     
     if len(guess) != 5:
         update.message.reply_text('Your word was not 5 letters\.')
-    elif not d.check(guess):
+    elif not guess.lower() in d: #not d.check(guess):
         update.message.reply_text('Word was not in the english dictionary\. Please make sure you spelled it correctly\.')
     else:
         if not context.chat_data.get('guesses'):

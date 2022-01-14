@@ -1,6 +1,6 @@
 import os
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Defaults
-import dummycommands as c
+import commands as c
 import logging
 
 API_KEY = os.environ.get('API_KEY')
@@ -17,7 +17,7 @@ def main():
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandler("start", c.start_command))
-    # dp.add_handler(CallbackQueryHandler(c.button))
+    dp.add_handler(CallbackQueryHandler(c.button))
     dp.add_handler(CommandHandler("guess", c.guess_command))
     dp.add_handler(CommandHandler("status", c.status_command))
     dp.add_handler(CommandHandler("help", c.help_command))
