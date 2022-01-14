@@ -7,8 +7,6 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 d = enchant.Dict("en_US")
 
 def start_command(update, context):
-    # context.chat_data['test'] = 1
-
     soup = BeautifulSoup(update.message.text_html, features="html.parser")
     tag=soup.find("span", {"class": "tg-spoiler"})
 
@@ -100,8 +98,10 @@ def generate_guess_response(correctness, guess):
     full_res = colors + '\n' + str_res + '\n' + colors
     return full_res
 
-def generate_win_response(str_res, guesses):
+def generate_win_response(str_res, guesses, username):
     num_guesses = len(guesses)
+    if username == 'freedomlandstudios':
+        return 'ROBERTI!!!! YOU ABSOLUTE ANIMAL YOU FUCKING GOT IT'
     if num_guesses > 1:
         win_res = "YOU GOT IT RIGHT BUDDY AND IT ONLY TOOK YOU " + str(num_guesses) + " TRIES"
     elif num_guesses == 1:
@@ -114,8 +114,6 @@ def generate_incorrect_response(str_res, guesses):
     return inc_res + '\n' + str_res
 
 def guess_command(update, context):
-    # context.chat_data['test'] += 1
-    # print(context.chat_data['test'])
     lingo_word = context.chat_data.get('lingo_word')
     guesses = context.chat_data.get('guesses')
     if not lingo_word:
@@ -146,7 +144,7 @@ def guess_command(update, context):
         str_res = generate_guess_response(correctness, guess)
 
         if guess == lingo_word:
-            str_res = generate_win_response(str_res, context.chat_data.get('guesses'))
+            str_res = generate_win_response(str_res, context.chat_data.get('guesses'), update.message.from_user['username'])
         else:
             str_res = generate_incorrect_response(str_res, context.chat_data.get('guesses'))
         update.message.reply_text(str_res+'\n\n')
