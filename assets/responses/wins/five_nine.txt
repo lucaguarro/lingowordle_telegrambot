@@ -1,0 +1,3 @@
+I mean {num_guesses} attempts ain\t great but you could have done worse
+With {num_guesses} you\'re just an ordinary bunch
+Took you guys {num_guesses} attempts\. Word\.

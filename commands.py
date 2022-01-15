@@ -1,12 +1,83 @@
 from bs4 import BeautifulSoup
 from collections import Counter
+from datetime import date
+import random
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-with open("words_alpha.txt", "r") as f:
-    d = {line.strip() for line in f}
+with open("./assets/dictionaries/english.txt", "r") as f:
+    d_en = {line.strip() for line in f}
+
+with open("./assets/dictionaries/italian.txt", "r") as f:
+    d_it = {line.strip() for line in f}
+
+dict_set = {'en': d_en, 'it': d_it}
+
+def add_lang_to_chat(lang, context):
+    if context.chat_data.get('languages') and lang in context.chat_data.get('languages'):
+        return -1
+    if not context.chat_data.get('languages'):
+        context.chat_data['languages'] = [lang]
+    else:
+        context.chat_data['languages'].append(lang)
+    return 1
+
+def add_language_command(update, context):
+    lingo_word = context.chat_data.get('lingo_word')
+    guesses = context.chat_data.get('guesses')
+    if lingo_word and (not guesses or (len(guesses) and guesses[-1] != lingo_word)):
+        update.message.reply_text('You can\'t modify the languages in the middle of a game\.')
+    else:
+        lang = context.args[0].upper()
+
+        if lang not in ['ENGLISH', 'ITALIAN']:
+            update.message.reply_text('That language is not supported\. Italian and English are supported\.')
+            return
+        elif lang == 'ENGLISH':
+            status = add_lang_to_chat('en', context)
+        elif lang == 'ITALIAN':
+            status = add_lang_to_chat('it', context)
+
+        if status == -1:
+            update.message.reply_text('This language was already added\.')
+        else:
+            update.message.reply_text(lang + ' WAS ADDED\.')
+    
+def del_lang_from_chat(lang, context):
+    if context.chat_data.get('languages') and lang in context.chat_data.get('languages'):
+        context.chat_data.get('languages').remove(lang)
+        return 1
+    else:
+        return -1
+
+def del_language_command(update, context):
+    lingo_word = context.chat_data.get('lingo_word')
+    guesses = context.chat_data.get('guesses')
+    if lingo_word and (not guesses or (len(guesses) and guesses[-1] != lingo_word)):
+        update.message.reply_text('You can\'t modify the languages in the middle of a game\.')
+    else:
+        lang = context.args[0].upper()
+        if lang == 'ENGLISH':
+            status = del_lang_from_chat('en', context)
+        elif lang == 'ITALIAN':
+            status = del_lang_from_chat('it', context)
+        if status == 1:
+            update.message.reply_text(lang + ' DELETED')
+        else:
+            update.message.reply_text('That language was never added\.')
+
+def see_languages_command(update, context):
+    str_res = 'You are playing with the following languages:  '
+    if context.chat_data.get('languages'):
+        for lang in context.chat_data.get('languages'):
+            str_res += lang + ', '
+        str_res = str_res[0:len(str_res)-2]
+    update.message.reply_text(str_res)
 
 def start_command(update, context):
+    if not context.chat_data.get('languages'):
+        context.chat_data['languages'] = ['en']
+
     soup = BeautifulSoup(update.message.text_html, features="html.parser")
     tag=soup.find("span", {"class": "tg-spoiler"})
 
@@ -18,10 +89,10 @@ def start_command(update, context):
     context.chat_data['potential_lingo_word'] = potential_lingo_word
     lingo_word = context.chat_data.get('lingo_word')
 
-    if len(potential_lingo_word) != 5:
-        update.message.reply_text('Lingo word must be 5 characters long\. No less and no more\.\nGame word was not set\.')
-    elif not potential_lingo_word.lower() in d: #d.check(potential_lingo_word):
-        update.message.reply_text('Word was not in the english dictionary\. Please make sure you spelled it correctly\.')
+    if len(potential_lingo_word) < 4 or len(potential_lingo_word) > 10:
+        update.message.reply_text('Lingo word must be between 4 and 10 characters long\. \n ❌ Game word was not set\. ❌')
+    elif not any([potential_lingo_word.lower() in dict_set[lang] for lang in context.chat_data['languages']]): #d.check(potential_lingo_word):
+        update.message.reply_text('Word was not in the following active languages: '+ ', '.join(context.chat_data['languages']) + '\. Please make sure you spelled it correctly\.  \n ❌ Game word was not set\. ❌')
     else:
         guesses = context.chat_data.get('guesses')
         if lingo_word and (not guesses or (len(guesses) and guesses[-1] != lingo_word)):
@@ -37,7 +108,7 @@ def start_command(update, context):
             context.chat_data['lingo_word'] = context.chat_data['potential_lingo_word']
             context.chat_data['potential_lingo_word'] = None
             context.chat_data['guesses'] = None
-            update.message.reply_text('Game has started\. Waiting for guesses from players\.')
+            update.message.reply_text('✅ Game has started\. Waiting for guesses from players\. ✅')
 
 def button(update, context):
     """Parses the CallbackQuery and updates the message text."""
@@ -46,12 +117,14 @@ def button(update, context):
     if query.data == '1':
         context.chat_data['lingo_word'] = context.chat_data['potential_lingo_word']
         del context.chat_data['guesses']
-        query.message.reply_text('Game has started\. Waiting for guesses from players\.')
+        query.message.reply_text('✅ Game has started\. Waiting for guesses from players\. ✅')
+    if query.data == '2':
+        query.message.reply_text('Game continues...')
 
     context.chat_data['potential_lingo_word'] = None
 
 def validate_guess(lingo_word, guess):
-    correctness = [-1,-1,-1,-1,-1]
+    correctness = [-1] * len(lingo_word)
     counter = Counter(lingo_word)
     for i in range(len(guess)):
         if guess[i] == lingo_word[i]:
@@ -102,14 +175,37 @@ def generate_guess_response(correctness, guess):
     full_res = colors + '\n' + str_res + '\n' + colors
     return full_res
 
+def select_random_line_from_file(src_file, num_g, usrname):
+    today = date.today()
+    def random_line(afile):
+        line = next(afile)
+        for num, aline in enumerate(afile, 2):
+            if random.randrange(num):
+                continue
+            line = aline
+        return line
+    with open(src_file, 'r') as file:
+        myline = random_line(file)
+    day = today.strftime("%B %d, %Y")
+    return myline.format(username=usrname, num_guesses=num_g, date=day)
+
+
 def generate_win_response(str_res, guesses, username):
     num_guesses = len(guesses)
+
+    if num_guesses == 1:
+        source_file = './assets/responses/wins/one.txt'
+    elif num_guesses > 1 and num_guesses <= 4:
+        source_file = './assets/responses/wins/two_four.txt'
+    elif num_guesses > 4 and num_guesses < 10:
+        source_file = './assets/responses/wins/five_nine.txt'
+    elif num_guesses >= 10:
+        source_file = './assets/responses/wins/ten_more.txt'
+
     if username == 'freedomlandstudios':
-        return 'ROBERTI\!\!\!\! YOU ABSOLUTE ANIMAL YOU FUCKING GOT IT, KEEP ON ROCKIN\' BUDDY\!\!'
-    if num_guesses > 1:
-        win_res = "YOU GOT IT RIGHT BUDDY AND IT ONLY TOOK YOU " + str(num_guesses) + " TRIES"
-    elif num_guesses == 1:
-        win_res = "ONE AND DONE BABY ONE AND DONE"
+        win_res = 'ROBERTI\!\!\!\! YOU ABSOLUTE ANIMAL YOU FUCKING GOT IT\, KEEP ON ROCKIN\' BUDDY\!\!'
+    else:
+        win_res = select_random_line_from_file(source_file, num_guesses, username)
     return str_res + '\n' + win_res
 
 def generate_incorrect_response(str_res, guesses):
@@ -130,13 +226,13 @@ def guess_command(update, context):
     guess = context.args[0].upper()
 
     if guess is None:
-        update.message.reply_text('Please guess a 5 letter word\.')
+        update.message.reply_text('Please guess a word between 4 and 10 characters\.')
         return
     
-    if len(guess) != 5:
-        update.message.reply_text('Your word was not 5 letters\.')
-    elif not guess.lower() in d: #not d.check(guess):
-        update.message.reply_text('Word was not in the english dictionary\. Please make sure you spelled it correctly\.')
+    if len(guess) != len(lingo_word):
+        update.message.reply_text('Your word must be the length of the set word which is ' + str(len(lingo_word)))
+    elif not any([guess.lower() in dict_set[lang] for lang in context.chat_data['languages']]): #not d.check(guess):
+        update.message.reply_text('Word was not in the dictionary\. Please make sure you spelled it correctly\.')
     else:
         if not context.chat_data.get('guesses'):
             context.chat_data['guesses'] = [guess]
@@ -172,5 +268,8 @@ def help_command(update, context):
 '''
 /start \[word\] \- \[word\] must be a 5 letter word stylized as spoiler text
 /guess \[word\] \- \[word\] must be a 5 letter word
-/status \- outputs all guesses made so far as well as their results'''
+/status \- outputs all guesses made so far as well as their results
+/addlang \[language\] \- Add a language to the set of allowable words\. English and Italian supported\. If no language is set\, English will be used by default\.
+/dellang \[language\] \- Delete a language to the set of allowable words\. English and Italian supported\.
+/seelangs \- See all active languages'''
     )
