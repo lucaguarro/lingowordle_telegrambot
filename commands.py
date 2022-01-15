@@ -108,7 +108,7 @@ def start_command(update, context):
             context.chat_data['lingo_word'] = context.chat_data['potential_lingo_word']
             context.chat_data['potential_lingo_word'] = None
             context.chat_data['guesses'] = None
-            update.message.reply_text('✅ Game has started and the word has ' + str(len(potential_lingo_word)) + ' characters\. Waiting for guesses from players\. ✅')
+            update.message.reply_text('✅ Game has started and the word has *' + str(len(potential_lingo_word)) + '* characters\. Waiting for guesses from players\. ✅')
 
 def button(update, context):
     """Parses the CallbackQuery and updates the message text."""
@@ -117,7 +117,7 @@ def button(update, context):
     if query.data == '1':
         context.chat_data['lingo_word'] = context.chat_data['potential_lingo_word']
         del context.chat_data['guesses']
-        query.message.reply_text('✅ Game has started and the word has ' + str(len(context.chat_data['lingo_word'])) + ' characters\. Waiting for guesses from players\. ✅')
+        query.message.reply_text('✅ Game has started and the word has *' + str(len(context.chat_data['lingo_word'])) + '* characters\. Waiting for guesses from players\. ✅')
     if query.data == '2':
         query.message.reply_text('Game continues...')
 
