@@ -105,7 +105,7 @@ def generate_guess_response(correctness, guess):
 def generate_win_response(str_res, guesses, username):
     num_guesses = len(guesses)
     if username == 'freedomlandstudios':
-        return 'ROBERTI\!\!\!\! YOU ABSOLUTE ANIMAL YOU FUCKING GOT IT'
+        return 'ROBERTI\!\!\!\! YOU ABSOLUTE ANIMAL YOU FUCKING GOT IT, KEEP ON ROCKIN\' BUDDY\!\!'
     if num_guesses > 1:
         win_res = "YOU GOT IT RIGHT BUDDY AND IT ONLY TOOK YOU " + str(num_guesses) + " TRIES"
     elif num_guesses == 1:
