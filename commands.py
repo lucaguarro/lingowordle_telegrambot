@@ -266,8 +266,8 @@ def status_command(update, context):
 def help_command(update, context):
     update.message.reply_text(
 '''
-/start \[word\] \- \[word\] must be a 5 letter word stylized as spoiler text
-/guess \[word\] \- \[word\] must be a 5 letter word
+/start \[word\] \- \[word\] must be a 4-10 letter word stylized as spoiler text
+/guess \[word\] \- \[word\] must be a letter word with length of that of the set word
 /status \- outputs all guesses made so far as well as their results
 /addlang \[language\] \- Add a language to the set of allowable words\. English and Italian supported\. If no language is set\, English will be used by default\.
 /dellang \[language\] \- Delete a language to the set of allowable words\. English and Italian supported\.
