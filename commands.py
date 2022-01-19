@@ -116,7 +116,7 @@ def button(update, context):
     query.answer()
     if query.data == '1':
         context.chat_data['lingo_word'] = context.chat_data['potential_lingo_word']
-        del context.chat_data['guesses']
+        context.chat_data['guesses'] = None
         query.message.reply_text('✅ Game has started and the word has *' + str(len(context.chat_data['lingo_word'])) + '* characters\. Waiting for guesses from players\. ✅')
     if query.data == '2':
         query.message.reply_text('Game continues...')
@@ -125,11 +125,13 @@ def button(update, context):
 
 def validate_guess(lingo_word, guess):
     correctness = [-1] * len(lingo_word)
+    indices_of_known = []
     counter = Counter(lingo_word)
     for i in range(len(guess)):
         if guess[i] == lingo_word[i]:
             correctness[i] = 2
             counter[guess[i]] -= 1
+            indices_of_known.append(i)
 
     for i in range(len(guess)):
         if not correctness[i] == 2:
@@ -248,20 +250,57 @@ def guess_command(update, context):
         else:
             str_res = generate_incorrect_response(str_res, context.chat_data.get('guesses'))
         update.message.reply_text(str_res+'\n\n')
+
+def get_summary(guesses, correctnesses):
+    # if correctnesses[i][j] == 2, then we know the letter
+    known_letters = ['\_'] * len(guesses[0])
+    overall_set = {}
+    for i in range(len(guesses)):
+        curr_set = {}
+        for j in range(len(guesses[0])):
+            if correctnesses[i][j]:
+                if correctnesses[i][j] == 2 and known_letters[j] == '\_':
+                    known_letters[j] = guesses[i][j]
+
+                if guesses[i][j] in curr_set:
+                    curr_set[guesses[i][j]] += 1
+                else:
+                    curr_set[guesses[i][j]] = 1
+
+        for key in curr_set:
+            if key in overall_set:
+                if curr_set[key] > overall_set[key]:
+                    overall_set[key] = curr_set[key]
+            else:
+                overall_set[key] = curr_set[key]
+
+    for i in range(len(known_letters)):
+        if known_letters[i] != '\_':
+            if known_letters[i] in overall_set:
+                overall_set[known_letters[i]] -= 1
+
+    leftovers = [k for k in overall_set for i in range(overall_set[k])]
+    found_res = '*So Far:  *' + ' '.join(known_letters)
+    leftovers = '*Known Letters:  *' + ', '.join(leftovers)
+    return '\n' + found_res + '\n' + leftovers
+
     
 def status_command(update, context):
     if context.chat_data.get('guesses'):
         all_colors = []
         guesses = context.chat_data.get('guesses')
+        lingo_word = context.chat_data.get('lingo_word')
+        correctnesses = []
         for guess in guesses:
-            lingo_word = context.chat_data.get('lingo_word')
             correctness = validate_guess(lingo_word, guess)
             colors = gen_colors(correctness)
             all_colors.append(colors)
+            correctnesses.append(correctness)
 
+        summary = get_summary(guesses, correctnesses)
         colors_and_guesses=["{}{}".format(a_, b_) for a_, b_ in zip(all_colors, guesses)]
         all_colors_text = '\n'.join(colors_and_guesses)
-        update.message.reply_text(all_colors_text)
+        update.message.reply_text(all_colors_text + '\n' + summary)
 
 def help_command(update, context):
     update.message.reply_text(
