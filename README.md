@@ -6,6 +6,8 @@ This is a simple telegram chatbot that allows groups of friends to play the fun 
 - 🟨 The letter exists but is not in the correct position
 - 🟥 The letter does not exist anywhere in the word
 
+(Note that the bot has been extended to allow words between 4-10 characters)
+
 #### Example
 
 Word to guess: HELLO
@@ -21,11 +23,13 @@ The bot is deployed on heroku and is live! The bot is named **lingowordle_bot**.
 
 #### Commands
 
-- /help - Provides info about the available commands
-- /start [word] - Set the word for the game and have your friends guess it. The word must be stylized as spoiler text so your friends don't see it!
-- /guess [word] - Guess the word.
-- /status - See all guesses so far and their results.
+- /start [word] - [word] must be a 4-10 letter word stylized as spoiler text
+- /guess [word] - [word] must be a letter word with length of that of the set word
+- /status - outputs all guesses made so far as well as their results
+- /addlang [language] - Add a language to the set of allowable words. English and Italian supported. If no language is set, English will be used by default.
+- /dellang [language] - Delete a language to the set of allowable words. English and Italian supported.
+- /seelangs - See all active languages
 
 #### Screenshot of use
 
-![Screenshot of Use](./sample.jpg)
+![Screenshot of Use](./assets/sample.jpg)
