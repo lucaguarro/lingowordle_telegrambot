@@ -301,6 +301,8 @@ def status_command(update, context):
         colors_and_guesses=["{}{}".format(a_, b_) for a_, b_ in zip(all_colors, guesses)]
         all_colors_text = '\n'.join(colors_and_guesses)
         update.message.reply_text(all_colors_text + '\n' + summary)
+    else:
+        update.message.reply_text("No guesses have been made yet\.")
 
 def help_command(update, context):
     update.message.reply_text(
