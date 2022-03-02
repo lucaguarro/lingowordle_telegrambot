@@ -2,16 +2,23 @@ from bs4 import BeautifulSoup
 from collections import Counter
 from datetime import date
 import random
+import json
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-with open("./assets/dictionaries/english.txt", "r") as f:
-    d_en = {line.strip() for line in f}
+# with open("./assets/dictionaries/english.txt", "r") as f:
+#     d_en = {line.strip() for line in f}
 
-with open("./assets/dictionaries/italian.txt", "r") as f:
-    d_it = {line.strip() for line in f}
+def keystoint(x):
+    return {int(k): set(v) for k, v in x.items()}
 
-dict_set = {'en': d_en, 'it': d_it}
+with open("./assets/dictionaries/english.json", "r") as f:
+    d_en = json.load(f, object_hook=keystoint)
+
+# with open("./assets/dictionaries/italian.txt", "r") as f:
+#     d_it = {line.strip() for line in f}
+
+dict_set = {'en': d_en} # , 'it': d_it}
 
 def add_lang_to_chat(lang, context):
     if context.chat_data.get('languages') and lang in context.chat_data.get('languages'):
@@ -91,7 +98,7 @@ def start_command(update, context):
 
     if len(potential_lingo_word) < 4 or len(potential_lingo_word) > 10:
         update.message.reply_text('Lingo word must be between 4 and 10 characters long\. \n ❌ Game word was not set\. ❌')
-    elif not any([potential_lingo_word.lower() in dict_set[lang] for lang in context.chat_data['languages']]): #d.check(potential_lingo_word):
+    elif not any([potential_lingo_word.lower() in dict_set[lang][len(potential_lingo_word)] for lang in context.chat_data['languages']]): #d.check(potential_lingo_word):
         update.message.reply_text('Word was not in the following active languages: '+ ', '.join(context.chat_data['languages']) + '\. Please make sure you spelled it correctly\.  \n ❌ Game word was not set\. ❌')
     else:
         guesses = context.chat_data.get('guesses')
@@ -233,7 +240,7 @@ def guess_command(update, context):
     
     if len(guess) != len(lingo_word):
         update.message.reply_text('Your word must be the length of the set word which is ' + str(len(lingo_word)))
-    elif not any([guess.lower() in dict_set[lang] for lang in context.chat_data['languages']]): #not d.check(guess):
+    elif not any([guess.lower() in dict_set[lang][len(guess)] for lang in context.chat_data['languages']]): #not d.check(guess):
         update.message.reply_text('Word was not in the dictionary\. Please make sure you spelled it correctly\.')
     else:
         if not context.chat_data.get('guesses'):
